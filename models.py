@@ -1,7 +1,8 @@
 from pydantic import BaseModel
+from sqlmodel import SQLModel
 
 # Base model with shared customer fields
-class CustomerBase(BaseModel):
+class CustomerBase(SQLModel):
     name: str
     description: str | None
     email: str
@@ -12,7 +13,7 @@ class CustomerCreate(CustomerBase):
     pass
 
 # Model representing a customer with an optional ID (used in DB responses)
-class Customer(CustomerBase):
+class Customer(SQLModel, table=True):
     id: int | None = None
 
 # Model representing a single transaction
