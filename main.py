@@ -2,15 +2,7 @@ import zoneinfo
 from datetime import datetime
 
 from fastapi import FastAPI
-from pydantic import BaseModel
-
-# Pydantic model to validate customer data
-class Customer(BaseModel):
-    name: str
-    description: str | None
-    email: str
-    age: int
-
+from models import Customer, CustomerCreate, Transaction, Invoice
 
 app = FastAPI()
 
@@ -19,6 +11,7 @@ app = FastAPI()
 @app.get("/")
 async def root():
     return {"message": "Hello World!"}
+
 
 # Dictionary mapping ISO country codes to timezone strings
 country_timezones = {
@@ -39,7 +32,32 @@ async def time(iso_code: str):
     return{"time": datetime.now(tz)}
 
 
+# In-memory customer storage (simulates a database)
+db_customers: list[Customer] = []
+
+
 # Endpoint to create a customer with validated input
-@app.post("/customers")
-async def create_customer(customer_data: Customer):
-    return customer_data
+@app.post("/customers", response_model = Customer)
+async def create_customer(customer_data: CustomerCreate):
+    customer = Customer.model_validate(customer_data.model_dump())
+    customer.id = len(db_customers)  # Simulate auto-incremented ID
+    db_customers.append(customer)
+    return customer
+
+
+# Endpoint to list all registered customers
+@app.get("/customers", response_model=list[Customer])
+async def list_customer():
+    return db_customers
+
+
+# Endpoint to create a transaction
+@app.post("/transactions")
+async def create_transaction(transaction_data: Transaction):
+    return transaction_data
+
+
+# Endpoint to create an invoice
+@app.post("/invoices")
+async def create_invoice(invoice_data: Invoice):
+    return invoice_data
