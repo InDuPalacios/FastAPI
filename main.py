@@ -1,8 +1,19 @@
 import zoneinfo
 from datetime import datetime
+
 from fastapi import FastAPI
+from pydantic import BaseModel
+
+# Pydantic model to validate customer data
+class Customer(BaseModel):
+    name: str
+    description: str | None
+    email: str
+    age: int
+
 
 app = FastAPI()
+
 
 # Root endpoint returns a simple welcome message
 @app.get("/")
@@ -18,6 +29,7 @@ country_timezones = {
     "PE": "America/Lima",
 }
 
+
 # Endpoint to return the current time based on ISO country code
 @app.get("/time/{iso_code}")
 async def time(iso_code: str):
@@ -25,3 +37,9 @@ async def time(iso_code: str):
     timezone_str = country_timezones.get(iso)
     tz = zoneinfo.ZoneInfo(timezone_str)
     return{"time": datetime.now(tz)}
+
+
+# Endpoint to create a customer with validated input
+@app.post("/customers")
+async def create_customer(customer_data: Customer):
+    return customer_data
