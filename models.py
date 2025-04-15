@@ -1,12 +1,20 @@
 from pydantic import BaseModel
 from sqlmodel import SQLModel, Field
 
-class Customer(BaseModel):
-    id: int
+class CustomerBase(BaseModel):
     name: str
     description: str | None
     email: str = Field(..., min_length=5, regex=r".+@.+\..+")
     age: int
+
+
+class CustomerCreate(CustomerBase):
+    pass
+
+
+class Customer(CustomerBase):
+    id: int | None = None
+
 
 # Model representing a single transaction
 class Transaction(BaseModel):
