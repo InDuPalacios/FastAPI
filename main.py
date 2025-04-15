@@ -2,11 +2,10 @@ import zoneinfo
 from datetime import datetime
 
 from fastapi import FastAPI
-from models import Customer, CustomerCreate, Transaction, Invoice
-from db import SessionDep, create_all_tables
-from sqlmodel import select
+from models import Customer, Transaction, Invoice
 
-app = FastAPI(lifespan= create_all_tables)
+
+app = FastAPI()
 
 
 # Root endpoint returns a simple welcome message
@@ -25,6 +24,7 @@ country_timezones = {
 }
 
 
+
 # Endpoint to return the current time based on ISO country code
 @app.get("/time/{iso_code}")
 async def time(iso_code: str):
@@ -39,25 +39,10 @@ async def time(iso_code: str):
     }
 
 
-# In-memory customer storage (simulates a database)
-db_customers: list[Customer] = []
-
-
-# Endpoint to create a customer with validated input
-@app.post("/customers", response_model = Customer)
-async def create_customer(customer_data: CustomerCreate, session: SessionDep):
-    customer = Customer.model_validate(customer_data.model_dump())
-    session.add(customer)
-    session.commit()
-    session.refresh(customer)
-    return customer
-
-
 # Endpoint to list all registered customers
-@app.get("/customers", response_model=list[Customer])
-async def list_customer(session: SessionDep):
-    return session.exec(select(Customer).all())
-    
+@app.post("/customers")
+async def create_customer(customer_data: Customer):
+    return customer_data
 
 
 # Endpoint to create a transaction

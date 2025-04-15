@@ -1,20 +1,12 @@
 from pydantic import BaseModel
-from sqlmodel import SQLModel
+from sqlmodel import SQLModel, Field
 
-# Base model with shared customer fields
-class CustomerBase(SQLModel):
+class Customer(BaseModel):
+    id: int
     name: str
     description: str | None
-    email: str
+    email: str = Field(..., min_length=5, regex=r".+@.+\..+")
     age: int
-
-# Model used when creating a new customer (input only)
-class CustomerCreate(CustomerBase):
-    pass
-
-# Model representing a customer with an optional ID (used in DB responses)
-class Customer(SQLModel, table=True):
-    id: int | None = None
 
 # Model representing a single transaction
 class Transaction(BaseModel):
@@ -22,13 +14,14 @@ class Transaction(BaseModel):
     ammount: int
     description: str
 
+
 # Model representing an invoice that contains a list of transactions
 class Invoice(BaseModel):
     id: int
     customer: Customer
     transactions: list[Transaction]
     total: int
-
+    
     @property
     def ammount_total(self):
         """
