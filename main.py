@@ -39,10 +39,16 @@ async def time(iso_code: str):
     }
 
 
+db_customers: list[Customer] = []
+
+
 # Endpoint to list all registered customers
 @app.post("/customers", response_model= Customer)
 async def create_customer(customer_data: CustomerCreate):
-    return customer_data
+    customer = Customer.model_validate(customer_data.model_dump())
+    customer.id = len(db_customers)
+    db_customers.append(customer)
+    return customer
 
 
 # Endpoint to create a transaction
