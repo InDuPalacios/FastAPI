@@ -51,6 +51,21 @@ async def create_customer(customer_data: CustomerCreate):
     return customer
 
 
+# Endpoint to list all registered customers
+@app.get("/customers", response_model=list[Customer])
+async def list_customer():
+    return db_customers
+
+
+# Endpoint to get a single customer by ID
+@app.get("/customers/{customer_id}", response_model=Customer)
+async def get_customer(customer_id: int):
+    for customer in db_customers:
+        if customer.id == customer_id:
+            return customer
+    return {"error": "Customer not found"}
+
+
 # Endpoint to create a transaction
 @app.post("/transactions")
 async def create_transaction(transaction_data: Transaction):
