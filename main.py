@@ -3,9 +3,10 @@ from datetime import datetime
 
 from fastapi import FastAPI
 from models import Customer, CustomerCreate, Transaction, Invoice
+from db import SessionDep, create_all_tables
 
 
-app = FastAPI()
+app = FastAPI(lifespan= create_all_tables)
 
 
 # Root endpoint returns a simple welcome message
@@ -44,7 +45,7 @@ db_customers: list[Customer] = []
 
 # Endpoint to list all registered customers
 @app.post("/customers", response_model= Customer)
-async def create_customer(customer_data: CustomerCreate):
+async def create_customer(customer_data: CustomerCreate, session:SessionDep):
     customer = Customer.model_validate(customer_data.model_dump())
     customer.id = len(db_customers)
     db_customers.append(customer)

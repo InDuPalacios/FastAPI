@@ -37,5 +37,5 @@ uvloop==0.21.0
 watchfiles==1.0.4
 websockets==15.0.1
 
-# fastapi['standar'] == 0.115.12
+# fastapi[standar] == 0.115.12
 # sqlmodel == 0.0.24
