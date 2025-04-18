@@ -13,7 +13,7 @@ class CustomerCreate(CustomerBase):
     pass
 
 
-class Customer(SQLModel, table= True):
+class Customer(CustomerBase, table= True):
     id: int | None = Field(default= None, primary_key= True)
 
 

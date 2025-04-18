@@ -4,6 +4,7 @@ from datetime import datetime
 from fastapi import FastAPI
 from models import Customer, CustomerCreate, Transaction, Invoice
 from db import SessionDep, create_all_tables
+from sqlmodel import select
 
 
 app = FastAPI(lifespan= create_all_tables)
@@ -55,8 +56,8 @@ async def create_customer(customer_data: CustomerCreate, session: SessionDep):
 
 # Endpoint to list all registered customers
 @app.get("/customers", response_model=list[Customer])
-async def list_customer():
-    return db_customers
+async def list_customer(session: SessionDep):
+    return session.exec(select(Customer)).all()
 
 
 # Endpoint to get a single customer by ID
