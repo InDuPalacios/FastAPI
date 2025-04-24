@@ -81,30 +81,27 @@ async def delete_customer(customer_id: int, session: SessionDep):
 
 
 # Endpoint to update an existing customer by ID
-@app.put("/customers/{customer_id}", response_model=Customer)
+@app.patch(
+        "/customers/{customer_id}", 
+        response_model=Customer, 
+        status_code=status.HTTP_201_CREATED
+)
 async def update_customer(
     customer_id: int,
     updated_data: CustomerUpdate,
     session: SessionDep
 ):
     customer = session.get(Customer, customer_id)
-
     if not customer:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Customer not found"
         )
-
-    # Extract only the fields that were provided (non-null values)
-    customer_data = updated_data.model_dump(exclude_unset=True)
-
-    for key, value in customer_data.items():
-        setattr(customer, key, value)
-
+    # Use sqlmodel_update to update fields in one step
+    customer.sqlmodel_update(updated_data.model_dump(exclude_unset=True))
     session.add(customer)
     session.commit()
     session.refresh(customer)
-
     return customer
 
 
