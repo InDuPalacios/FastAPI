@@ -2,7 +2,7 @@ import zoneinfo
 from datetime import datetime
 
 from fastapi import FastAPI, HTTPException, status
-from models import Customer, CustomerCreate, Transaction, Invoice
+from models import Customer, CustomerCreate, Transaction, Invoice, CustomerUpdate
 from db import SessionDep, create_all_tables
 from sqlmodel import select
 
@@ -67,6 +67,7 @@ async def read_customer(customer_id: int, session: SessionDep):
     return customer
 
 
+# Endpoint to delete a specific customer by ID
 @app.delete("/customers/{customer_id}")
 async def delete_customer(customer_id: int, session: SessionDep):
     customer = session.get(Customer, customer_id)
@@ -77,6 +78,34 @@ async def delete_customer(customer_id: int, session: SessionDep):
     session.delete(customer)
     session.commit()
     return {"detal":"ok"}
+
+
+# Endpoint to update an existing customer by ID
+@app.put("/customers/{customer_id}", response_model=Customer)
+async def update_customer(
+    customer_id: int,
+    updated_data: CustomerUpdate,
+    session: SessionDep
+):
+    customer = session.get(Customer, customer_id)
+
+    if not customer:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Customer not found"
+        )
+
+    # Extract only the fields that were provided (non-null values)
+    customer_data = updated_data.model_dump(exclude_unset=True)
+
+    for key, value in customer_data.items():
+        setattr(customer, key, value)
+
+    session.add(customer)
+    session.commit()
+    session.refresh(customer)
+
+    return customer
 
 
 # Endpoint to create a transaction

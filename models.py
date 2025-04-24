@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 from sqlmodel import SQLModel, Field
+from typing import Optional
 
 
 class CustomerBase(SQLModel):
@@ -15,6 +16,13 @@ class CustomerCreate(CustomerBase):
 
 class Customer(CustomerBase, table= True):
     id: int | None = Field(default= None, primary_key= True)
+
+
+class CustomerUpdate(SQLModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    email: Optional[str] = None
+    age: Optional[int] = None
 
 
 # Model representing a single transaction
