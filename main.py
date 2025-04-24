@@ -1,7 +1,7 @@
 import zoneinfo
 from datetime import datetime
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException, status
 from models import Customer, CustomerCreate, Transaction, Invoice
 from db import SessionDep, create_all_tables
 from sqlmodel import select
@@ -26,7 +26,6 @@ country_timezones = {
 }
 
 
-
 # Endpoint to return the current time based on ISO country code
 @app.get("/time/{iso_code}")
 async def time(iso_code: str):
@@ -39,9 +38,6 @@ async def time(iso_code: str):
         "message": f"Estás viendo la hora actual en {data['name']}.",
         "time": now.strftime("%Y-%m-%d %H:%M:%S")
     }
-
-
-db_customers: list[Customer] = []
 
 
 # Endpoint to list all registered customers
@@ -62,11 +58,25 @@ async def list_customer(session: SessionDep):
 
 # Endpoint to get a single customer by ID
 @app.get("/customers/{customer_id}", response_model=Customer)
-async def get_customer(customer_id: int):
-    for customer in db_customers:
-        if customer.id == customer_id:
-            return customer
-    return {"error": "Customer not found"}
+async def read_customer(customer_id: int, session: SessionDep):
+    customer = session.get(Customer, customer_id)
+    if not customer:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, 
+            detail="Customer not found")
+    return customer
+
+
+@app.delete("/customers/{customer_id}")
+async def delete_customer(customer_id: int, session: SessionDep):
+    customer = session.get(Customer, customer_id)
+    if not customer:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, 
+            detail="Customer not found")
+    session.delete(customer)
+    session.commit()
+    return {"detal":"ok"}
 
 
 # Endpoint to create a transaction
