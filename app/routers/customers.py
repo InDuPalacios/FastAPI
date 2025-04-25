@@ -1,47 +1,14 @@
-import zoneinfo
-from datetime import datetime
-
-from fastapi import FastAPI, HTTPException, status
-from models import Customer, CustomerCreate, Transaction, Invoice, CustomerUpdate
-from db import SessionDep, create_all_tables
+from fastapi import APIRouter, status, HTTPException
 from sqlmodel import select
 
+from models import Customer, CustomerCreate, CustomerUpdate
+from db import SessionDep
 
-app = FastAPI(lifespan= create_all_tables)
-
-
-# Root endpoint returns a simple welcome message
-@app.get("/")
-async def root():
-    return {"message": "Hello World!"}
-
-
-# Dictionary mapping ISO country codes to timezone strings
-country_timezones = {
-    "CO": {"timezone": "America/Bogota", "name": "Colombia"},
-    "MX": {"timezone": "America/Mexico_City", "name": "México"},
-    "AR": {"timezone": "America/Argentina/Buenos_Aires", "name": "Argentina"},
-    "BR": {"timezone": "America/Sao_Paulo", "name": "Brasil"},
-    "PE": {"timezone": "America/Lima", "name": "Perú"},
-}
-
-
-# Endpoint to return the current time based on ISO country code
-@app.get("/time/{iso_code}")
-async def time(iso_code: str):
-    iso = iso_code.upper()
-    data = country_timezones.get(iso)
-    tz = zoneinfo.ZoneInfo(data["timezone"])
-    now = datetime.now(tz)
-
-    return {
-        "message": f"Estás viendo la hora actual en {data['name']}.",
-        "time": now.strftime("%Y-%m-%d %H:%M:%S")
-    }
+router = APIRouter()
 
 
 # Endpoint to list all registered customers
-@app.post("/customers", response_model= Customer)
+@router.post("/customers", response_model= Customer, tags=['customers'])
 async def create_customer(customer_data: CustomerCreate, session: SessionDep):
     customer = Customer.model_validate(customer_data.model_dump())
     session.add(customer)
@@ -51,13 +18,13 @@ async def create_customer(customer_data: CustomerCreate, session: SessionDep):
 
 
 # Endpoint to list all registered customers
-@app.get("/customers", response_model=list[Customer])
+@router.get("/customers", response_model=list[Customer], tags=['customers'])
 async def list_customer(session: SessionDep):
     return session.exec(select(Customer)).all()
 
 
 # Endpoint to get a single customer by ID
-@app.get("/customers/{customer_id}", response_model=Customer)
+@router.get("/customers/{customer_id}", response_model=Customer, tags=['customers'])
 async def read_customer(customer_id: int, session: SessionDep):
     customer = session.get(Customer, customer_id)
     if not customer:
@@ -68,7 +35,7 @@ async def read_customer(customer_id: int, session: SessionDep):
 
 
 # Endpoint to delete a specific customer by ID
-@app.delete("/customers/{customer_id}")
+@router.delete("/customers/{customer_id}", tags=['customers'])
 async def delete_customer(customer_id: int, session: SessionDep):
     customer = session.get(Customer, customer_id)
     if not customer:
@@ -81,10 +48,11 @@ async def delete_customer(customer_id: int, session: SessionDep):
 
 
 # Endpoint to update an existing customer by ID
-@app.patch(
+@router.patch(
         "/customers/{customer_id}", 
         response_model=Customer, 
-        status_code=status.HTTP_201_CREATED
+        status_code=status.HTTP_201_CREATED, 
+        tags=['customers']
 )
 async def update_customer(
     customer_id: int,
@@ -103,15 +71,3 @@ async def update_customer(
     session.commit()
     session.refresh(customer)
     return customer
-
-
-# Endpoint to create a transaction
-@app.post("/transactions")
-async def create_transaction(transaction_data: Transaction):
-    return transaction_data
-
-
-# Endpoint to create an invoice
-@app.post("/invoices")
-async def create_invoice(invoice_data: Invoice):
-    return invoice_data
