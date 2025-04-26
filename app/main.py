@@ -2,14 +2,14 @@ import zoneinfo
 from datetime import datetime
 
 from fastapi import FastAPI
-from models import Transaction, Invoice
 from db import create_all_tables
-from .routers import customers, billing
+from .routers import customers, billing, plans
 
 
 app = FastAPI(lifespan= create_all_tables)
 app.include_router(customers.router)
 app.include_router(billing.router, tags=["billing"]) 
+app.include_router(plans.router, tags=["plans"])
 
 
 # Root endpoint returns a simple welcome message
