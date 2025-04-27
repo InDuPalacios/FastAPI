@@ -8,7 +8,7 @@ router = APIRouter()
 
 
 @router.post("/plans")
-def create_plan(plan_data:Plan, session: SessionDep):
+async def create_plan(plan_data:Plan, session: SessionDep):
     plan_db = Plan.model_validate(plan_data.model_dump())
     session.add(plan_db)
     session.commit()
@@ -17,5 +17,6 @@ def create_plan(plan_data:Plan, session: SessionDep):
 
 
 @router.get("/plans", response_model=list[Plan])
-def list_plan(session: SessionDep):
+async def list_plan(session: SessionDep):
     plans = session.exec(select(Plan)).all()
+    return plans

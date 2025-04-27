@@ -1,14 +1,14 @@
-from fastapi import APIRouter, status, HTTPException
+from fastapi import APIRouter, status, HTTPException, Query
 from sqlmodel import select
 
-from models import Customer, CustomerCreate, CustomerUpdate, Plan, CustomerPlan
+from models import Customer, CustomerCreate, CustomerUpdate, Plan, CustomerPlan, StatusEnum
 from db import SessionDep
 
 router = APIRouter()
 
 
 # Endpoint to list all registered customers
-@router.post("/customers", response_model= Customer, tags=['customers'])
+@router.post("/customers", response_model= Customer)
 async def create_customer(customer_data: CustomerCreate, session: SessionDep):
     customer = Customer.model_validate(customer_data.model_dump())
     session.add(customer)
@@ -18,13 +18,13 @@ async def create_customer(customer_data: CustomerCreate, session: SessionDep):
 
 
 # Endpoint to list all registered customers
-@router.get("/customers", response_model=list[Customer], tags=['customers'])
+@router.get("/customers", response_model=list[Customer])
 async def list_customer(session: SessionDep):
     return session.exec(select(Customer)).all()
 
 
 # Endpoint to get a single customer by ID
-@router.get("/customers/{customer_id}", response_model=Customer, tags=['customers'])
+@router.get("/customers/{customer_id}", response_model=Customer)
 async def read_customer(customer_id: int, session: SessionDep):
     customer = session.get(Customer, customer_id)
     if not customer:
@@ -35,7 +35,7 @@ async def read_customer(customer_id: int, session: SessionDep):
 
 
 # Endpoint to delete a specific customer by ID
-@router.delete("/customers/{customer_id}", tags=['customers'])
+@router.delete("/customers/{customer_id}")
 async def delete_customer(customer_id: int, session: SessionDep):
     customer = session.get(Customer, customer_id)
     if not customer:
@@ -73,11 +73,13 @@ async def update_customer(
     return customer
 
 
+# Endpoint to subscribe a customer to a plan
 @router.post("/customers/{customer_id}/plans/{plan_id}")
 async def suscribe_customer_to_plan(
         customer_id: int, 
         plan_id: int,
-        session: SessionDep
+        session: SessionDep,
+        plan_status:StatusEnum = Query()
     ):
     customer_db = session.get(Customer, customer_id)
     plan_db = session.get(Plan, plan_id)
@@ -86,7 +88,9 @@ async def suscribe_customer_to_plan(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, 
                             detail="The customer or plan doesn't exist"
         )
-    customer_plan_db = CustomerPlan(plan_id=plan_db.id, customer_id=customer_db.id)
+    customer_plan_db = CustomerPlan(plan_id=plan_db.id, 
+                                    customer_id=customer_db.id,
+                                    status= plan_status)
 
     session.add(customer_plan_db)
     session.commit()
@@ -94,9 +98,40 @@ async def suscribe_customer_to_plan(
     return customer_plan_db
     
 
+# Endpoint to get customer's plans filtered by status
 @router.get("/customers/{customer_id}/plans")
-async def get_customer_plan(customer_id: int, session: SessionDep):
+async def get_customer_plan(
+    customer_id: int, session: SessionDep, plan_status: StatusEnum = Query()
+):
     customer_db = session.get(Customer, customer_id)
     if not customer_db:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
-    return customer_db.plans
+    
+    query = (
+        select(CustomerPlan)
+        .where(CustomerPlan.customer_id == customer_id)
+        .where(CustomerPlan.status == plan_status)
+    )
+    plans = session.exec(query).all()
+    return plans
+
+
+# Endpoint to unsubscribe a customer from a plan
+@router.patch("/customers/{customer_id}/plans/{plan_id}/unsubscribe")
+async def unsubscribe_customer_from_plan(customer_id: int, plan_id: int, session: SessionDep):
+    query = select(CustomerPlan).where(
+        CustomerPlan.customer_id == customer_id,
+        CustomerPlan.plan_id == plan_id,
+        CustomerPlan.status == StatusEnum.ACTIVE  # Aseguramos que esté activo
+    )
+    customer_plan = session.exec(query).first()
+
+    if not customer_plan:
+        raise HTTPException(status_code=404, detail="Subscription not found or already inactive")
+
+    customer_plan.status = StatusEnum.INACTIVE
+    session.add(customer_plan)
+    session.commit()
+    session.refresh(customer_plan)
+
+    return {"detail": "Customer unsubscribed successfully"}

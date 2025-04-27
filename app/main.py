@@ -7,7 +7,7 @@ from .routers import customers, billing, plans
 
 
 app = FastAPI(lifespan= create_all_tables)
-app.include_router(customers.router)
+app.include_router(customers.router, tags=['customers'])
 app.include_router(billing.router, tags=["billing"]) 
 app.include_router(plans.router, tags=["plans"])
 
