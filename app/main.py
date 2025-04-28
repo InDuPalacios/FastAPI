@@ -1,9 +1,10 @@
 # ./app/main.py
 
 # Importing External Modules
+import time
 import zoneinfo
 from datetime import datetime
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 
 # Importing Internal Modules
 from db import create_all_tables
@@ -14,6 +15,15 @@ app = FastAPI(lifespan= create_all_tables)
 app.include_router(customers.router, tags=['customers'])
 app.include_router(billing.router, tags=["billing"]) 
 app.include_router(plans.router, tags=["plans"])
+
+
+@app.middleware("http")
+async def log_request_time(request: Request, call_next):
+    star_time = time.time()
+    response = await call_next(request)
+    process_time = time.time() - star_time
+    print(f"Request: {request.url} completed in: {process_time:.4f} seconds")
+    return response
 
 
 # Root endpoint returns a simple welcome message
@@ -34,7 +44,7 @@ country_timezones = {
 
 # Endpoint to return the current time based on ISO country code
 @app.get("/time/{iso_code}")
-async def time(iso_code: str):
+async def get_time_by_iso_code(iso_code: str):
     iso = iso_code.upper()
     data = country_timezones.get(iso)
     tz = zoneinfo.ZoneInfo(data["timezone"])
