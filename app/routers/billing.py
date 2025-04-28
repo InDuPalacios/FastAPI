@@ -31,15 +31,23 @@ async def create_transaction(
     return transaction_db
 
 
+# Endpoint to list transactions with pagination info
 @router.get("/transactions")
 async def list_transaction(
     session:SessionDep, 
     skip: int = Query(0, description="Records to skip"),
     limit: int= Query(10, description="Number of records to return")
 ):
-    query = select(Transaction).offset(skip).limit(limit)
-    transaction = session.exec(query).all()
-    return transaction
+    transactions_query = session.exec(select(Transaction))
+    transactions = transactions_query.all()
+    total = len(transactions)
+
+    paginated_transactions = transactions[skip:skip + limit]
+
+    return {
+        "items": paginated_transactions,
+        "total_transactions": total
+    }
 
 
 # Endpoint to create an invoice
