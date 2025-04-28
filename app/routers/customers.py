@@ -1,6 +1,10 @@
+# ./app/routers/customers.py
+
+# Importing External Modules
 from fastapi import APIRouter, status, HTTPException, Query
 from sqlmodel import select
 
+# Importing Internal Modules
 from models import Customer, CustomerCreate, CustomerUpdate, Plan, CustomerPlan, StatusEnum
 from db import SessionDep
 
