@@ -4,17 +4,29 @@
 import time
 import zoneinfo
 from datetime import datetime
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Depends, HTTPException, status
+from fastapi.security import HTTPBasic, HTTPBasicCredentials
+from typing import Annotated
 
 # Importing Internal Modules
 from db import create_all_tables
 from .routers import customers, billing, plans
 
-
 app = FastAPI(lifespan= create_all_tables)
+security = HTTPBasic()
+
 app.include_router(customers.router, tags=['customers'])
 app.include_router(billing.router, tags=["billing"]) 
 app.include_router(plans.router, tags=["plans"])
+
+
+# Endpoint to authenticate the user using HTTP Basic Authentication
+@app.get("/")
+async def root(credentials: Annotated[HTTPBasicCredentials, Depends(security)]):
+    if credentials.username == "indu" and credentials.password == "1234":
+        return {"mensaje": f"Hola, {credentials.username}"}
+    else:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
 
 
 @app.middleware("http")
@@ -35,12 +47,6 @@ async def log_request_headers(request: Request, call_next):
 
     response = await call_next(request)
     return response
-
-
-# Root endpoint returns a simple welcome message
-@app.get("/")
-async def root():
-    return {"message": "Hello World!"}
 
 
 # Dictionary mapping ISO country codes to timezone strings
