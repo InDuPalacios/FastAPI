@@ -26,6 +26,17 @@ async def log_request_time(request: Request, call_next):
     return response
 
 
+@app.middleware("http")
+async def log_request_headers(request: Request, call_next):
+    # Print all headers
+    print("Headers received:")
+    for name, value in request.headers.items():
+        print(f"{name}: {value}")
+
+    response = await call_next(request)
+    return response
+
+
 # Root endpoint returns a simple welcome message
 @app.get("/")
 async def root():
