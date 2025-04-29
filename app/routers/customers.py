@@ -1,23 +1,39 @@
 # ./app/routers/customers.py
 
 # Importing External Modules
-from fastapi import APIRouter, status, HTTPException, Query
+from fastapi import APIRouter, status, HTTPException, Query, Depends
 from sqlmodel import select
+from sqlalchemy.orm import Session
 
 # Importing Internal Modules
-from models import Customer, CustomerCreate, CustomerUpdate, Plan, CustomerPlan, StatusEnum
+from models import (
+    Customer,
+    CustomerCreate,
+    CustomerUpdate,
+    Plan,
+    CustomerPlan,
+    StatusEnum,
+    CustomerLogin
+)
+from app.utils.utils import hash_password, verify_password
 from db import SessionDep
 
 router = APIRouter()
 
 
-# Endpoint to list all registered customers
+# Endpoint para crear un cliente
 @router.post("/customers", 
              response_model= Customer, 
              status_code=status.HTTP_201_CREATED
 )
-async def create_customer(customer_data: CustomerCreate, session: SessionDep):
-    customer = Customer.model_validate(customer_data.model_dump())
+async def create_customer(
+    customer_data: CustomerCreate, 
+    session: SessionDep
+):
+    hashed_password = hash_password(customer_data.password)
+    customer_data_dict = customer_data.model_dump()
+    customer_data_dict['password_hash'] = hashed_password
+    customer = Customer.model_validate(customer_data_dict)
     session.add(customer)
     session.commit()
     session.refresh(customer)
@@ -78,6 +94,22 @@ async def update_customer(
     session.commit()
     session.refresh(customer)
     return customer
+
+
+@router.post("/customers/login")
+async def login_customer(login_data: CustomerLogin, session: SessionDep):
+    customer = session.exec(select(Customer).where(Customer.email == login_data.email)).first()
+    if not customer:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid email or password"
+        )
+    if not verify_password(login_data.password, customer.password_hash):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid email or password"
+        )
+    return {"message": f"Login successful for {customer.name}"}
 
 
 # Endpoint to subscribe a customer to a plan

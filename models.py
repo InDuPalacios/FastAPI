@@ -1,10 +1,12 @@
 # ./models.py
 
 # Importing External Modules
+import bcrypt
 from enum import Enum
 from pydantic import BaseModel, EmailStr, field_validator
 from sqlmodel import SQLModel, Field, Relationship, Session, select
 from typing import Optional
+from sqlalchemy.orm import Session as SQLSession
 
 # Importing Internal Modules
 from db import engine
@@ -50,11 +52,12 @@ class CustomerBase(SQLModel):
 
 
 class CustomerCreate(CustomerBase):
-    pass
+    password: str 
 
 
 class Customer(CustomerBase, table= True):
     id: int | None = Field(default= None, primary_key= True)
+    password_hash: str
     transactions: list["Transaction"] = Relationship(back_populates="customer")
     plans: list[Plan] = Relationship(
         back_populates="customers", link_model=CustomerPlan
@@ -66,6 +69,11 @@ class CustomerUpdate(SQLModel):
     description: Optional[str] = None
     email: Optional[str] = None
     age: Optional[int] = None
+
+
+class CustomerLogin(BaseModel):
+    email: str
+    password: str
 
 
 class TransactionBase(SQLModel):

@@ -7,10 +7,13 @@ from datetime import datetime
 from fastapi import FastAPI, Request, Depends, HTTPException, status
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from typing import Annotated
+from sqlalchemy.orm import Session
 
 # Importing Internal Modules
-from db import create_all_tables
+from db import create_all_tables, SessionDep
 from .routers import customers, billing, plans
+from .utils.utils import hash_password, verify_password 
+from models import CustomerCreate, Customer
 
 app = FastAPI(lifespan= create_all_tables)
 security = HTTPBasic()
@@ -47,6 +50,7 @@ async def log_request_headers(request: Request, call_next):
 
     response = await call_next(request)
     return response
+
 
 
 # Dictionary mapping ISO country codes to timezone strings
